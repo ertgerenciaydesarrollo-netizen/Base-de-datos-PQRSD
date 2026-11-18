@@ -1,0 +1,1197 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seguimiento PQRSD</title>
+<meta name="description" content="Tablero interactivo para el seguimiento de PQRSD por vicepresidencia y dependencia.">
+<style>
+:root{
+  --bg:#f5f3ee; --panel:#ffffff; --ink:#18222d; --ink2:#4b5866; --ink3:#788391;
+  --line:#e4e0d7; --line2:#cfc9bc; --navy:#172a43; --navy2:#22395a; --blue:#2558a8;
+  --ok:#1f7a6d; --ext:#dc982a; --sin:#c4432e; --anu:#98a1ab; --nd:#cdc7b9;
+  --ok-bg:#e2f0ed; --ext-bg:#fbefd8; --sin-bg:#f9e3de; --anu-bg:#eceef0;
+  --sans:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+h1,h2,h3,h4,p{margin:0}
+a{color:var(--blue)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- Botones ---------- */
+.btn{display:inline-flex;align-items:center;gap:.45em;border:1px solid var(--line2);background:var(--panel);border-radius:8px;padding:.5em .9em;font-weight:600;font-size:13px;line-height:1.3;white-space:nowrap}
+.btn:hover{border-color:var(--ink3);background:#fbfaf7}
+.btn-p{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn-p:hover{background:var(--navy2);border-color:var(--navy2)}
+.btn svg{width:15px;height:15px;flex:none}
+.lnk{border:0;background:none;padding:0;color:var(--blue);font-weight:600;font-size:13px}
+.lnk:hover{text-decoration:underline}
+
+/* ---------- Estructura ---------- */
+.app{display:grid;grid-template-columns:292px minmax(0,1fr);min-height:100vh}
+.side{background:var(--navy);color:#dfe6ef;position:sticky;top:0;height:100vh;overflow-y:auto;padding:22px 12px 28px}
+.brand{padding:0 10px 18px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:12px}
+.brand b{display:block;font:600 21px/1.15 var(--serif);color:#fff;letter-spacing:.01em}
+.brand span{display:block;margin-top:6px;font-size:12px;color:#9fb0c5;line-height:1.45}
+.side h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8ea0b8;padding:8px 10px 6px;font-weight:600}
+.nav{list-style:none;margin:0;padding:0}
+.nav ul{list-style:none;margin:2px 0 8px;padding:0 0 0 10px;border-left:1px solid rgba(255,255,255,.14);margin-left:14px}
+.nv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;width:100%;text-align:left;border:0;background:none;color:inherit;padding:7px 10px;border-radius:7px;line-height:1.3}
+.nv:hover{background:rgba(255,255,255,.07)}
+.nv[aria-current=true]{background:#fff;color:var(--navy)}
+.nv .nm{font-weight:600;font-size:13px}
+.nv .ct{font-size:12.5px;font-weight:600;opacity:.9}
+.nv .pc{grid-column:1/-1;font-size:11.5px;opacity:.68}
+.nav ul .nv{padding:5px 8px}
+.nav ul .nv .nm{font-weight:400;font-size:12.5px}
+.nav ul .nv .pc{display:none}
+.nav ul .nv .ct{font-weight:400;font-size:12px}
+.vacio .side h2,.vacio .scope-sel{display:none!important}
+.scope-sel{display:none;width:100%;margin-top:4px;padding:.55em .6em;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:var(--navy2);color:#fff}
+
+.main{min-width:0;padding:22px 32px 64px;max-width:1280px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.crumb{font-size:12.5px;color:var(--ink3);display:flex;gap:.4em;flex-wrap:wrap;align-items:center;min-height:22px}
+.crumb button{border:0;background:none;padding:0;color:var(--blue);font-size:12.5px}
+.crumb button:hover{text-decoration:underline}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.ttl{font:600 30px/1.15 var(--serif);margin:6px 0 2px;letter-spacing:-.005em;text-wrap:balance}
+.ttl small{font:400 13px var(--sans);color:var(--ink3);margin-left:.5em;letter-spacing:0}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line2);margin:18px 0 22px}
+.tab{border:0;background:none;padding:9px 14px 10px;font-weight:600;color:var(--ink2);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--navy);border-bottom-color:var(--navy)}
+.tab .cnt{font-weight:400;color:var(--ink3);margin-left:.3em}
+
+/* ---------- Bloques ---------- */
+.lead{font-size:15px;line-height:1.6;max-width:86ch;color:var(--ink)}
+.lead b{font-weight:650}
+.sec{margin-top:30px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.sec-h h2{font:600 18px/1.3 var(--serif)}
+.sec-h p{font-size:12.5px;color:var(--ink3)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.pad{padding:16px 18px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px 12px;border-top:3px solid var(--line2);text-align:left;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;width:100%}
+button.kpi:hover{border-color:var(--ink3);border-top-color:var(--sin)}
+.kpi .k{font-size:12px;color:var(--ink2);font-weight:600}
+.kpi .v{font:600 27px/1.2 var(--serif);margin-top:3px}
+.kpi .v small{font:400 13px var(--sans);color:var(--ink3);margin-left:.25em}
+.kpi .s{font-size:12px;color:var(--ink3);margin-top:2px;line-height:1.4}
+.kpi.ok{border-top-color:var(--ok)} .kpi.ext{border-top-color:var(--ext)} .kpi.sin{border-top-color:var(--sin)}
+.up{color:var(--ok);font-weight:600} .dn{color:var(--sin);font-weight:600}
+
+/* barras apiladas */
+.stk{display:flex;height:10px;border-radius:3px;overflow:hidden;background:#ece8df;min-width:2px}
+.stk i{display:block;min-width:1px}
+.sg-ok{background:var(--ok)} .sg-ext{background:var(--ext)} .sg-sin{background:var(--sin)} .sg-anu{background:var(--anu)} .sg-nd{background:var(--nd)}
+.comp{margin-top:14px}
+.comp .stk{height:16px;border-radius:4px}
+.leg{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:9px;font-size:12.5px;color:var(--ink2)}
+.leg span{display:inline-flex;align-items:center;gap:.45em}
+.leg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.leg b{color:var(--ink);font-weight:600}
+
+/* hallazgos */
+.find{margin:0;padding:0;list-style:none;display:grid;gap:9px}
+.find li{position:relative;padding-left:18px;line-height:1.55;max-width:92ch}
+.find li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--navy)}
+
+/* tablas */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+thead th{font-size:11.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line2);white-space:nowrap;background:#faf9f5}
+thead th:first-child{border-top-left-radius:var(--r)} thead th:last-child{border-top-right-radius:var(--r)}
+tbody tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+td.num{text-align:right;white-space:nowrap}
+th button{border:0;background:none;padding:0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;display:inline-flex;gap:.3em;align-items:center}
+th button:hover{color:var(--ink)}
+th[aria-sort] button{color:var(--navy)}
+th button .ar{font-size:9px;opacity:.9}
+tr.clk{cursor:pointer}
+tr.clk:hover td{background:#faf8f3}
+.nm-b{border:0;background:none;padding:0;text-align:left;font-weight:600;color:var(--ink)}
+tr.clk:hover .nm-b,.nm-b:hover{color:var(--blue);text-decoration:underline}
+td .stk{width:150px}
+td.bar{width:170px}
+.muted{color:var(--ink3)}
+.low{color:var(--ink3);font-size:11.5px;font-weight:400;white-space:nowrap}
+tfoot td{font-weight:600;background:#faf9f5;border-top:1px solid var(--line2);border-bottom:0}
+
+/* listas de categorías */
+.cat{list-style:none;margin:0;padding:0}
+.cat li{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(60px,1fr) 52px 74px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.cat li:last-child{border-bottom:0}
+.cat li.hd{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:600;padding-top:0}
+.cat .l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat .n,.cat .p{text-align:right;white-space:nowrap}
+.cat .p{color:var(--ink2)}
+.card h3{font:600 15px/1.3 var(--serif);margin-bottom:10px}
+
+/* gráfico semanal */
+.chart svg{display:block;width:100%;height:auto}
+.chart text{font:11px var(--sans);fill:var(--ink3)}
+.chart .tot{fill:var(--ink2);font-weight:600}
+.chart .gl{stroke:var(--line);stroke-width:1}
+
+/* insignias */
+.bdg{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.bdg-ok{background:var(--ok-bg);color:#135449} .bdg-ext{background:var(--ext-bg);color:#7d5206} .bdg-sin{background:var(--sin-bg);color:#96291a} .bdg-anu,.bdg-nd{background:var(--anu-bg);color:#4d5661}
+
+/* seguimiento */
+.note{background:var(--ext-bg);border:1px solid #edd6a6;border-radius:8px;padding:9px 13px;font-size:13px;color:#5b3d07;margin-bottom:14px;max-width:110ch}
+.filters{display:grid;grid-template-columns:minmax(200px,1.6fr) repeat(4,minmax(0,1fr));gap:10px}
+.fld label{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);margin-bottom:3px}
+.fld input,.fld select{width:100%;padding:.5em .65em;border:1px solid var(--line2);border-radius:8px;background:var(--panel);min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 10px;align-items:center}
+.chip{border:1px solid var(--line2);background:var(--panel);border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600;color:var(--ink2);display:inline-flex;align-items:center;gap:.45em}
+.chip i{width:8px;height:8px;border-radius:50%}
+.chip b{font-weight:400;color:var(--ink3)}
+.chip[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip[aria-pressed=true] b{color:#c5d0de}
+.bar-res{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--ink2)}
+.bar-res .acts{align-items:center;gap:14px}
+.seg td{vertical-align:top;padding-top:9px;padding-bottom:9px}
+.seg .as{max-width:380px;min-width:220px}
+.seg .as b{display:block;font-weight:500;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.seg .as span{display:block;font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg .sm{font-size:12px;color:var(--ink3);display:block}
+.seg td.nw{white-space:nowrap}
+.late{color:var(--sin);font-weight:600}
+.pager{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:var(--ink2)}
+.pager .btn[disabled]{opacity:.45;cursor:default}
+.empty{padding:36px 20px;text-align:center;color:var(--ink2)}
+
+/* detalle */
+dialog{border:0;border-radius:14px;padding:0;max-width:min(780px,94vw);width:100%;color:var(--ink);box-shadow:0 24px 70px rgba(15,25,40,.35)}
+dialog::backdrop{background:rgba(18,28,42,.5)}
+.dlg-h{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:18px 22px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
+.dlg-h h2{font:600 19px/1.3 var(--serif)}
+.dlg-h p{font-size:12.5px;color:var(--ink3);margin-top:2px}
+.dlg-b{padding:16px 22px 22px}
+.dlg-b .asunto{font-size:14.5px;line-height:1.55;margin-bottom:6px}
+.dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;margin:0}
+.dl div{min-width:0}
+.dl dt{font-size:11.5px;color:var(--ink3);font-weight:600}
+.dl dd{margin:0;overflow-wrap:anywhere}
+.dlg-b h3{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink2);margin:18px 0 9px;padding-top:14px;border-top:1px solid var(--line)}
+.x{border:0;background:none;font-size:22px;line-height:1;padding:2px 6px;color:var(--ink2);border-radius:6px}
+.x:hover{background:#f0ede6}
+
+/* inicio sin datos */
+.welcome{max-width:660px;margin:9vh auto 0;text-align:center}
+.welcome h1{font:600 30px/1.2 var(--serif);margin-bottom:10px}
+.welcome p{color:var(--ink2);font-size:15px;line-height:1.6}
+.drop{margin:26px 0 16px;border:2px dashed var(--line2);border-radius:14px;padding:38px 20px;background:var(--panel)}
+.drop.on{border-color:var(--blue);background:#f1f5fc}
+.drop p{margin-top:12px;font-size:13px;color:var(--ink3)}
+.err{margin-top:14px;background:var(--sin-bg);border:1px solid #ecc1b8;color:#7d2114;border-radius:8px;padding:10px 14px;font-size:13.5px;text-align:left}
+details.notes{margin-top:34px;font-size:13px;color:var(--ink2);max-width:100ch}
+details.notes summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details.notes ul{margin:10px 0 0;padding-left:18px;display:grid;gap:6px;line-height:1.55}
+
+/* ---------- Reporte ---------- */
+#reporte{background:#dcd8cf;min-height:100vh}
+.rep-bar{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap;padding:10px 20px}
+.rep-bar .sp{flex:1}
+.rep-bar label{font-size:12.5px;color:#c5d0de;display:inline-flex;align-items:center;gap:.5em}
+.rep-bar select{padding:.4em .5em;border-radius:7px;border:1px solid rgba(255,255,255,.3);background:var(--navy2);color:#fff;max-width:300px}
+.rep-bar .btn{border-color:rgba(255,255,255,.3);background:transparent;color:#fff}
+.rep-bar .btn:hover{background:rgba(255,255,255,.1)}
+.rep-bar .btn-p{background:#fff;color:var(--navy);border-color:#fff}
+.rep-bar .btn-p:hover{background:#e9eef5}
+.doc{background:#fff;max-width:880px;margin:24px auto 60px;padding:52px 60px 60px;box-shadow:0 2px 20px rgba(0,0,0,.14);font-size:13px;line-height:1.55;color:var(--ink)}
+.doc .cover{border-bottom:3px solid var(--navy);padding-bottom:20px;margin-bottom:26px}
+.doc .cover .ey{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.doc .cover h1{font:600 32px/1.15 var(--serif);margin:8px 0 14px}
+.doc .meta{display:grid;grid-template-columns:repeat(4,auto);justify-content:start;gap:4px 36px;font-size:12.5px;margin:0}
+.doc .meta dt{color:var(--ink3);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.doc .meta dd{margin:0;font-weight:600}
+.doc h2{font:600 22px/1.25 var(--serif);margin:0 0 4px;padding-top:6px}
+.doc h2 .nro,.doc h3 .nro{color:var(--ink3);font-weight:400;margin-right:.35em}
+.doc h3{font:600 16px/1.3 var(--serif);margin:24px 0 8px}
+.doc h4{font:600 12px/1.3 var(--sans);text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);margin:14px 0 6px}
+.doc p{margin:8px 0}
+.doc .sub{color:var(--ink3);font-size:12.5px;margin:0 0 10px}
+.doc section.vp{margin-top:40px;padding-top:26px;border-top:3px solid var(--navy)}
+.doc .kpis{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0}
+.doc .kpi{padding:9px 11px;border-radius:6px}
+.doc .kpi .v{font-size:20px}
+.doc .kpi .k,.doc .kpi .s{font-size:11px}
+.doc table{font-size:11.5px}
+.doc th,.doc td{padding:5px 6px}
+.doc thead th{font-size:10px;background:#f4f2ec;border-radius:0!important}
+.doc td .stk{width:92px}
+.doc td.bar{width:104px}
+.doc .find{gap:5px;margin:8px 0}
+.doc .tbl{border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:8px 0}
+.doc .dep{border:1px solid var(--line2);border-radius:8px;padding:13px 16px 12px;margin:12px 0;break-inside:avoid}
+.doc .dep h4.t{font:600 14.5px/1.3 var(--serif);text-transform:none;letter-spacing:0;color:var(--ink);margin:0}
+.doc .dep .t small{font:400 11.5px var(--sans);color:var(--ink3);margin-left:.5em}
+.doc .dep .line{display:flex;flex-wrap:wrap;gap:4px 22px;margin:7px 0 8px;font-size:12px;color:var(--ink2)}
+.doc .dep .line b{font:600 15px var(--serif);color:var(--ink);margin-right:.25em}
+.doc .dep p{margin:8px 0 0;font-size:12.5px}
+.doc .dep .cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:18px;margin-top:10px;align-items:start}
+.doc .dep table{font-size:11px}
+.doc .dep th,.doc .dep td{padding:3px 6px}
+.doc .dep thead th{background:none;font-size:9.5px}
+.doc .grid2{gap:16px}
+.doc .cat li{font-size:11.5px;padding:4px 0;grid-template-columns:minmax(0,2.4fr) minmax(40px,1fr) 44px 70px}
+.doc .cat li.hd{font-size:9.5px}
+.doc .card{border-radius:6px}
+.doc .pad{padding:11px 13px}
+.doc .card h3{margin:0 0 6px;font-size:13.5px}
+.doc .leg{font-size:11.5px}
+.doc .anexo td{vertical-align:top}
+.doc .anexo td{font-size:10.5px}
+.doc .anexo td.dp{width:17%}
+.doc .anexo td.us{width:16%}
+.doc .anexo tr.grp td{background:#f4f2ec;font-weight:600;font-size:11px;border-bottom:1px solid var(--line2)}
+.doc .foot{margin-top:34px;padding-top:12px;border-top:1px solid var(--line2);font-size:11px;color:var(--ink3)}
+.doc ol.met{padding-left:18px;display:grid;gap:5px;font-size:12px;color:var(--ink2)}
+.pb{break-before:page}
+body.solo{background:#dcd8cf}
+
+/* ---------- Adaptación ---------- */
+@media screen and (max-width:1100px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters .fld:first-child{grid-column:1/-1}
+}
+@media screen and (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;padding:14px 14px 16px}
+  .brand{border:0;padding:0 0 8px;margin:0}
+  .side h2,.nav{display:none}
+  .scope-sel{display:block}
+  .main{padding:16px 16px 48px}
+  .ttl{font-size:24px}
+  .grid2{grid-template-columns:1fr}
+  .doc{padding:28px 20px;margin:0 auto}
+  .doc .meta{grid-template-columns:repeat(2,auto)}
+  .doc .dep .cols{grid-template-columns:1fr}
+}
+@media screen and (max-width:560px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters{grid-template-columns:1fr}
+  .dl{grid-template-columns:1fr}
+  .tab{padding:9px 8px 10px}
+  .doc .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:no-preference){
+  .nv,.btn,.chip,.kpi{transition:background-color .12s,border-color .12s,color .12s}
+}
+
+/* ---------- Impresión ---------- */
+@page{size:A4;margin:15mm 14mm 16mm}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body,body.solo,#reporte{background:#fff}
+  .rep-bar,.app,dialog{display:none!important}
+  .doc{box-shadow:none;margin:0;padding:0;max-width:none}
+  .doc section.vp{break-before:page;margin-top:0;padding-top:0;border-top:0}
+  .doc h2,.doc h3,.doc h4{break-after:avoid}
+  .doc tr,.doc .kpis,.doc .card,.doc .find li{break-inside:avoid}
+  .doc thead{display:table-header-group}
+  .doc tfoot{display:table-row-group}
+  .doc .tbl{break-inside:avoid}
+  .doc .anexo .tbl{break-inside:auto}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand">
+      <b>Seguimiento PQRSD</b>
+      <span id="brand-sub" data-dyn></span>
+    </div>
+    <h2 id="nav-h">Vicepresidencias y dependencias</h2>
+    <ul class="nav" id="nav" aria-labelledby="nav-h" data-dyn></ul>
+    <label class="vh" for="scope-sel">Vicepresidencia o dependencia</label>
+    <select class="scope-sel" id="scope-sel" data-dyn></select>
+  </aside>
+  <main class="main" id="main" data-dyn></main>
+</div>
+
+<div id="reporte" hidden>
+  <div class="rep-bar">
+    <button class="btn" data-act="rep-cerrar">← Volver al tablero</button>
+    <label>Alcance <select id="rep-vp" data-dyn></select></label>
+    <label><input type="checkbox" id="rep-anexo" checked> Incluir anexo de PQRSD sin respuesta</label>
+    <span class="sp"></span>
+    <button class="btn" data-act="rep-html">Descargar HTML</button>
+    <button class="btn btn-p" data-act="rep-print">Imprimir / Guardar como PDF</button>
+  </div>
+  <article class="doc" id="doc" data-dyn></article>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlg-t"><div id="dlg-c" data-dyn></div></dialog>
+<input type="file" id="file" accept=".csv,text/csv,text/plain" hidden>
+<script id="datos" type="application/json"></script>
+<script>
+'use strict';
+(() => {
+/* =====================================================================
+   Utilidades
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf0 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const N = n => nf0.format(n);
+const D = x => x == null ? '—' : nf1.format(x);
+const D0 = x => x == null ? '—' : (Number.isInteger(x) ? nf0.format(x) : nf1.format(x));
+const pc = x => x == null ? '—' : nf1.format(x) + '\u00a0%';
+const P = (a, b) => b ? pc(a / b * 100) : '—';
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const MES3 = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const fecha = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '—';
+const fechaLarga = iso => iso ? `${+iso.slice(8, 10)} de ${MESES[+iso.slice(5, 7) - 1]} de ${iso.slice(0, 4)}` : '—';
+const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dias = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
+const orac = s => s && s.length > 4 && !s.includes('.') && s === s.toUpperCase() ? s.charAt(0) + s.slice(1).toLowerCase() : s;
+const lista = a => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1];
+const pl = (n, uno, varios) => n === 1 ? uno : varios;
+const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+function parseFecha(s) {
+  s = String(s ?? '').trim();
+  let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return '';
+}
+function parseNum(s) {
+  s = String(s ?? '').trim();
+  return /^-?\d+([.,]\d+)?$/.test(s) ? parseFloat(s.replace(',', '.')) : null;
+}
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const head = text.slice(0, 20000);
+  const cnt = c => head.split(c).length - 1;
+  const d = [';', ',', '\t'].sort((a, b) => cnt(b) - cnt(a))[0];
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"' && cur === '') q = true;
+    else if (c === d) { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+function descargar(nombre, contenido, tipo) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([contenido], { type: tipo }));
+  a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const csvCampo = v => { v = String(v ?? ''); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+const aCSV = filas => '\uFEFF' + filas.map(f => f.map(csvCampo).join(';')).join('\r\n');
+
+/* =====================================================================
+   Lectura de la base
+   ===================================================================== */
+const COLS = [
+  ['radicado', h => h === 'radicado'],
+  ['fRad', h => /^fecha rad radic/.test(h)],
+  ['fRec', h => /^fecha rad recep/.test(h)],
+  ['vence', h => /^vence/.test(h)],
+  ['radSalida', h => h === 'rad salida'],
+  ['fSalida', h => /^fec\w* rad salida/.test(h)],
+  ['modalidad', h => /^modalidad/.test(h)],
+  ['termino', h => /^termino/.test(h)],
+  ['asunto', h => h === 'asunto'],
+  ['remitente', h => h === 'remitente'],
+  ['telefono', h => /^tel/.test(h)],
+  ['pais', h => h === 'pais'],
+  ['depto', h => h === 'departamento'],
+  ['ciudad', h => /^ciudad/.test(h)],
+  ['traslado', h => h === 'traslado'],
+  ['diasTraslado', h => / traslado$/.test(h)],
+  ['cumplimiento', h => h === 'cumplimiento'],
+  ['tema', h => /^tema/.test(h)],
+  ['depCod', h => h === 'dependencia actual'],
+  ['dep', h => h === 'nombre dependencia actual'],
+  ['vp', h => /^nombre vicepresidencia/.test(h)],
+  ['usuario', h => h === 'usuario actual'],
+  ['correo', h => /^correo/.test(h)],
+  ['usuarioAnt', h => h === 'usuario anterior'],
+  ['depAnt', h => /^dep\w* anterior/.test(h)],
+  ['estado', h => h === 'estado'],
+  ['fImpreso', h => /^fec\w* impreso/.test(h)],
+  ['fEnvio', h => /^fec\w* envio/.test(h)],
+  ['serie', h => h === 'serie'],
+  ['subserie', h => h === 'subserie'],
+  ['respTip', h => /^responsable/.test(h)],
+  ['fTip', h => /^fecha de tip/.test(h)],
+  ['diasResp', h => /^dias respuesta/.test(h)],
+  ['seguimiento', h => /^seguimiento/.test(h)],
+];
+const ETIQ = {
+  radicado: 'Radicado', fRad: 'Fecha radicación', fRec: 'Fecha recepción', vence: 'Vence', radSalida: 'Radicado salida', fSalida: 'Fecha salida',
+  modalidad: 'Modalidad de petición', termino: 'Término (días)', asunto: 'Asunto', remitente: 'Remitente', telefono: 'Teléfono', pais: 'País',
+  depto: 'Departamento', ciudad: 'Ciudad/Municipio', traslado: 'Traslado', diasTraslado: 'Días traslado', cumplimiento: 'Cumplimiento', tema: 'Tema',
+  depCod: 'Código dependencia', dep: 'Dependencia', vp: 'Vicepresidencia', usuario: 'Usuario actual', correo: 'Correo usuario', usuarioAnt: 'Usuario anterior',
+  depAnt: 'Dependencia anterior', estado: 'Estado', fImpreso: 'Fecha impreso', fEnvio: 'Fecha envío', serie: 'Serie', subserie: 'Subserie',
+  respTip: 'Responsable de tipificación', fTip: 'Fecha de tipificación', diasResp: 'Días respuesta', seguimiento: 'Seguimiento cumplimiento',
+};
+const FECHAS = ['fRad', 'fRec', 'vence', 'fSalida', 'fImpreso', 'fEnvio', 'fTip'];
+
+function mapear(fila) {
+  const m = {};
+  fila.forEach((celda, i) => {
+    const h = norm(celda);
+    if (!h) return;
+    for (const [k, t] of COLS) if (m[k] == null && t(h)) { m[k] = i; break; }
+  });
+  return m;
+}
+function estadoDe(r) {
+  const s = norm(r.seguimiento), c = norm(r.cumplimiento);
+  if (s.includes('extempor')) return 'ext';
+  if (s.includes('no se evidencia') || s.includes('sin respuesta')) return 'sin';
+  if (s.includes('anulad')) return 'anu';
+  if (s === 'cumple' || (!s && c === 'cumple')) return 'ok';
+  if (!s && c === 'incumple') return r.fSalida ? 'ext' : 'sin';
+  return 'nd';
+}
+const ST = {
+  ok: { c: 'En término', l: 'Respuesta en término' },
+  ext: { c: 'Extemporánea', l: 'Respuesta extemporánea' },
+  sin: { c: 'Sin respuesta', l: 'Sin evidencia de respuesta' },
+  anu: { c: 'Anulada', l: 'Respuesta anulada' },
+  nd: { c: 'Sin clasificar', l: 'Sin clasificar' },
+};
+const STK = ['ok', 'ext', 'sin', 'anu', 'nd'];
+
+function stats(rows) {
+  const s = { n: rows.length, ok: 0, ext: 0, sin: 0, anu: 0, nd: 0 };
+  const d = [];
+  for (const r of rows) { s[r.st]++; if (r.diasResp != null) d.push(r.diasResp); }
+  d.sort((a, b) => a - b);
+  s.pOk = s.n ? s.ok / s.n * 100 : null;
+  s.dN = d.length;
+  s.dProm = d.length ? d.reduce((a, b) => a + b, 0) / d.length : null;
+  s.dMed = d.length ? (d.length % 2 ? d[(d.length - 1) / 2] : (d[d.length / 2 - 1] + d[d.length / 2]) / 2) : null;
+  s.dMax = d.length ? d[d.length - 1] : null;
+  return s;
+}
+function grupos(rows, fn) {
+  const m = new Map();
+  for (const r of rows) { const k = fn(r); let a = m.get(k); if (!a) m.set(k, a = []); a.push(r); }
+  return [...m].map(([k, rs]) => ({ k, rows: rs, s: stats(rs) }))
+    .sort((a, b) => b.s.n - a.s.n || String(a.k).localeCompare(String(b.k), 'es'));
+}
+
+function construir(texto, archivo) {
+  const raw = parseCSV(texto);
+  let hi = -1, map = null;
+  for (let i = 0; i < Math.min(raw.length, 40); i++) {
+    const m = mapear(raw[i]);
+    if (Object.keys(m).length >= 6) { hi = i; map = m; break; }
+  }
+  if (hi < 0) throw new Error('No se encontró la fila de encabezados. El archivo debe ser el CSV exportado del listado de radicados (columnas «Radicado», «Vence», «Nombre Dependencia Actual», etc.).');
+  const falta = [];
+  if (map.vp == null) falta.push('«Nombre Vicepresidencia Actual»');
+  if (map.dep == null) falta.push('«Nombre Dependencia Actual»');
+  if (map.seguimiento == null && map.cumplimiento == null) falta.push('«Seguimiento Cumplimiento» o «Cumplimiento»');
+  if (falta.length) throw new Error('Al archivo le faltan columnas necesarias: ' + falta.join(', ') + '.');
+
+  let desde = '', hasta = '';
+  for (let i = 0; i < hi; i++) {
+    const f = raw[i].map(c => parseFecha(c)).filter(Boolean);
+    if (f.length >= 2 && /entre/i.test(raw[i].join(' '))) { desde = f[0]; hasta = f[1]; }
+  }
+
+  const rows = [];
+  for (let i = hi + 1; i < raw.length; i++) {
+    const f = raw[i];
+    if (f.filter(c => c && c.trim()).length < 4) continue;
+    const r = { fila: i + 1 };
+    for (const [k] of COLS) r[k] = map[k] == null ? '' : String(f[map[k]] ?? '').replace(/\s+/g, ' ').trim();
+    for (const k of FECHAS) r[k] = parseFecha(r[k]);
+    r.termino = parseNum(r.termino); r.diasResp = parseNum(r.diasResp); r.diasTraslado = parseNum(r.diasTraslado);
+    r.vp = r.vp || '(Sin vicepresidencia)';
+    r.dep = r.dep || '(Sin dependencia)';
+    r.fecha = r.fRec || r.fRad;
+    r.st = estadoDe(r);
+    r.busca = norm([r.radicado, r.asunto, r.remitente, r.usuario, r.correo, r.dep, r.modalidad, r.tema, r.radSalida].join(' '));
+    rows.push(r);
+  }
+  if (!rows.length) throw new Error('El archivo no contiene registros de PQRSD debajo de los encabezados.');
+
+  /* Un mismo funcionario aparece con su usuario de sistema y con su nombre completo: se unifica por correo. */
+  const variantes = new Map();
+  for (const r of rows) {
+    r.respKey = (r.correo || r.usuario).toLowerCase();
+    let m = variantes.get(r.respKey); if (!m) variantes.set(r.respKey, m = new Map());
+    m.set(r.usuario, (m.get(r.usuario) || 0) + 1);
+  }
+  for (const [k, m] of variantes) {
+    const v = [...m].sort((a, b) => (b[0].includes(' ') - a[0].includes(' ')) || b[1] - a[1]);
+    variantes.set(k, v[0][0] || '(Sin usuario)');
+  }
+  for (const r of rows) { r.resp = variantes.get(r.respKey); r.busca += ' ' + norm(r.resp); }
+
+  const distintos = new Set(rows.map(r => r.radicado)).size;
+  const radOk = distintos / rows.length > 0.9 && !rows.some(r => /\de\+\d+$/i.test(r.radicado));
+  rows.forEach(r => { r.id = radOk ? r.radicado : 'Fila ' + N(r.fila); });
+
+  const fechas = rows.map(r => r.fecha).filter(Boolean).sort();
+  if (!desde) { desde = fechas[0] || ''; hasta = fechas[fechas.length - 1] || ''; }
+
+  const vps = grupos(rows, r => r.vp).map(v => {
+    v.deps = grupos(v.rows, r => r.dep).map(d => { d.vp = v; d.cod = d.rows[0].depCod; return d; });
+    return v;
+  });
+  return { texto, archivo, rows, radOk, desde, hasta, s: stats(rows), vps, nDeps: vps.reduce((a, v) => a + v.deps.length, 0) };
+}
+
+/* =====================================================================
+   Estado de la interfaz
+   ===================================================================== */
+let DB = null;
+const F0 = () => ({ q: '', st: '', modalidad: '', estado: '', mes: '', traslado: '', usuario: '', usuarioNom: '', orden: 'fila', dir: 1, pag: 0 });
+const S = { vp: null, dep: null, tab: 'res', f: F0(), cmp: { k: 'n', d: -1 }, usuariosTodos: false, repVp: null, repAnexo: true, error: '' };
+const PAG = 50;
+
+function ambito() {
+  if (S.dep) return { tipo: 'dep', nombre: S.dep.k, rows: S.dep.rows, s: S.dep.s, vp: S.dep.vp, dep: S.dep };
+  if (S.vp) return { tipo: 'vp', nombre: S.vp.k, rows: S.vp.rows, s: S.vp.s, vp: S.vp, hijos: S.vp.deps };
+  return { tipo: 'all', nombre: 'Todas las vicepresidencias', rows: DB.rows, s: DB.s, hijos: DB.vps };
+}
+const ambitoVp = v => ({ tipo: 'vp', nombre: v.k, rows: v.rows, s: v.s, vp: v, hijos: v.deps });
+const ambitoDep = d => ({ tipo: 'dep', nombre: d.k, rows: d.rows, s: d.s, vp: d.vp, dep: d });
+const ambitoAll = () => ({ tipo: 'all', nombre: 'Todas las vicepresidencias', rows: DB.rows, s: DB.s, hijos: DB.vps });
+
+/* =====================================================================
+   Componentes de presentación
+   ===================================================================== */
+const segs = s => STK.filter(k => s[k] > 0).map(k => `<i class="sg-${k}" style="flex:${s[k]} 0 0" title="${ST[k].l}: ${N(s[k])} (${P(s[k], s.n)})"></i>`).join('');
+const stk = (s, ancho) => `<div class="stk"${ancho != null ? ` style="width:${Math.max(ancho, 1.5).toFixed(1)}%"` : ''} role="img" aria-label="${STK.filter(k => s[k] > 0).map(k => `${ST[k].c} ${P(s[k], s.n)}`).join(', ')}">${segs(s)}</div>`;
+const leyenda = s => `<div class="leg">${STK.filter(k => s[k] > 0).map(k => `<span><i class="sg-${k}"></i>${ST[k].l} <b>${N(s[k])}</b> (${P(s[k], s.n)})</span>`).join('')}</div>`;
+const bdg = k => `<span class="bdg bdg-${k}">${ST[k].c}</span>`;
+
+function delta(p, ref) {
+  if (p == null || ref == null) return '';
+  const d = p - ref;
+  if (Math.abs(d) < 0.05) return 'Igual al promedio general';
+  return `<span class="${d > 0 ? 'up' : 'dn'}">${d > 0 ? '▲' : '▼'} ${D(Math.abs(d))} pts</span> ${d > 0 ? 'sobre' : 'bajo'} el promedio general`;
+}
+
+function kpis(sc, interactivo) {
+  const s = sc.s;
+  let sub1;
+  if (sc.tipo === 'all') sub1 = `${N(DB.vps.length)} vicepresidencias u oficinas · ${N(DB.nDeps)} dependencias`;
+  else if (sc.tipo === 'vp') sub1 = `${P(s.n, DB.s.n)} del total` + (sc.hijos.length > 1 ? ` · ${N(sc.hijos.length)} dependencias` : '');
+  else sub1 = `${P(s.n, sc.vp.s.n)} de su vicepresidencia · ${P(s.n, DB.s.n)} del total`;
+  const sin = `<span class="k">Sin evidencia de respuesta</span><div class="v">${N(s.sin)}<small>${P(s.sin, s.n)}</small></div><div class="s">${interactivo && s.sin ? 'Ver radicados →' : 'No registran radicado de salida'}</div>`;
+  return `<div class="kpis">
+    <div class="kpi"><span class="k">PQRSD asignadas</span><div class="v">${N(s.n)}</div><div class="s">${sub1}</div></div>
+    <div class="kpi ok"><span class="k">Respondidas en término</span><div class="v">${pc(s.pOk)}</div><div class="s">${N(s.ok)} de ${N(s.n)}${sc.tipo !== 'all' ? '<br>' + delta(s.pOk, DB.s.pOk) : ''}</div></div>
+    <div class="kpi ext"><span class="k">Respuesta extemporánea</span><div class="v">${N(s.ext)}<small>${P(s.ext, s.n)}</small></div><div class="s">Respondidas fuera del término</div></div>
+    ${interactivo && s.sin ? `<button class="kpi sin" data-act="ver-sin">${sin}</button>` : `<div class="kpi sin">${sin}</div>`}
+    <div class="kpi"><span class="k">Días promedio de respuesta</span><div class="v">${D(s.dProm)}</div><div class="s">${s.dN ? `Mediana ${D0(s.dMed)} · máximo ${N(s.dMax)}` : 'Sin respuestas emitidas'}</div></div>
+  </div>`;
+}
+
+/* Tabla comparativa de vicepresidencias, dependencias o usuarios */
+function tablaCmp(items, total, o) {
+  const cols = [['k', o.etiqueta, ''], ['n', 'PQRSD', 'r'], ['part', '% del total', 'r'], [null, 'Distribución', ''], ['pOk', 'En término', 'r'], ['ext', 'Extemp.', 'r'], ['sin', 'Sin resp.', 'r'], ['dProm', 'Días prom.', 'r']];
+  const th = cols.map(([k, t, c]) => {
+    if (!o.orden || !k) return `<th class="${c}">${t}</th>`;
+    const act = o.orden.k === k;
+    return `<th class="${c}"${act ? ` aria-sort="${o.orden.d > 0 ? 'ascending' : 'descending'}"` : ''}><button data-cmp="${k}">${t}${act ? `<span class="ar">${o.orden.d > 0 ? '▲' : '▼'}</span>` : ''}</button></th>`;
+  }).join('');
+  const tr = items.map((g, i) => {
+    const s = g.s, nombre = esc(g.k) + (o.cod && g.cod ? ` <span class="low">·&nbsp;${esc(g.cod)}</span>` : '');
+    return `<tr${o.nav ? ` class="clk" data-ir="${o.nav}" data-i="${g.i ?? i}"` : ''}>
+      <td>${o.nav ? `<button class="nm-b">${nombre}</button>` : `<b>${nombre}</b>`}</td>
+      <td class="num">${N(s.n)}</td><td class="num muted">${P(s.n, total.n)}</td>
+      <td class="bar">${stk(s)}</td>
+      <td class="num"><b>${pc(s.pOk)}</b></td><td class="num">${N(s.ext)}</td><td class="num">${s.sin ? `<span class="late">${N(s.sin)}</span>` : '0'}</td><td class="num">${D(s.dProm)}</td></tr>`;
+  }).join('');
+  const pie = o.pie === false ? '' : `<tfoot><tr><td>${o.pieTxt || 'Total'}</td><td class="num">${N(total.n)}</td><td class="num">100,0 %</td><td class="bar">${stk(total)}</td><td class="num">${pc(total.pOk)}</td><td class="num">${N(total.ext)}</td><td class="num">${N(total.sin)}</td><td class="num">${D(total.dProm)}</td></tr></tfoot>`;
+  return `<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody>${pie}</table>`;
+}
+
+/* Lista de categorías con barra proporcional al volumen */
+function listaCat(titulo, rows, fn, max, o = {}) {
+  let g = grupos(rows, fn);
+  const nCat = g.length;
+  if (g.length > max) {
+    const resto = g.slice(max - 1);
+    const rs = resto.flatMap(x => x.rows);
+    g = g.slice(0, max - 1).concat({ k: `Otros (${N(resto.length)})`, rows: rs, s: stats(rs), otros: true });
+  }
+  const mx = Math.max(...g.filter(x => !x.otros || g.length === 1).map(x => x.s.n));
+  return `<div class="card pad"><h3>${titulo}${nCat > max ? ` <span class="low">· ${N(nCat)} categorías</span>` : ''}</h3><ul class="cat">
+    <li class="hd"><span>${o.col || 'Categoría'}</span><span></span><span class="n">PQRSD</span><span class="p">En término</span></li>
+    ${g.map(x => `<li><span class="l" title="${esc(x.k)}">${esc(o.crudo || x.otros ? x.k : orac(x.k))}</span><span>${stk(x.s, Math.min(x.s.n / mx, 1) * 100)}</span><span class="n">${N(x.s.n)}</span><span class="p">${pc(x.s.pOk)}</span></li>`).join('')}
+  </ul></div>`;
+}
+
+/* Gráfico de columnas apiladas por semana de recepción */
+function lunes(iso) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7);
+  return d.toISOString().slice(0, 10);
+}
+function grafSemanal(rows) {
+  const m = new Map();
+  for (const r of rows) {
+    if (!r.fecha) continue;
+    const k = lunes(r.fecha);
+    let o = m.get(k); if (!o) m.set(k, o = { n: 0, ok: 0, ext: 0, sin: 0, anu: 0, nd: 0 });
+    o.n++; o[r.st]++;
+  }
+  if (!m.size) return '<p class="muted">No hay fechas de recepción para graficar.</p>';
+  const ks = [...m.keys()].sort(), sem = [];
+  for (let d = new Date(ks[0] + 'T00:00:00Z'), fin = Date.parse(ks[ks.length - 1] + 'T00:00:00Z'); d.getTime() <= fin; d.setUTCDate(d.getUTCDate() + 7)) {
+    const k = d.toISOString().slice(0, 10);
+    sem.push({ k, ...(m.get(k) || { n: 0, ok: 0, ext: 0, sin: 0, anu: 0, nd: 0 }) });
+  }
+  const W = 860, H = 240, ml = 38, mr = 6, mt = 20, mb = 28, w = W - ml - mr, h = H - mt - mb;
+  const mx = Math.max(...sem.map(s => s.n));
+  const paso = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000].find(p => mx / p <= 4) || 10000;
+  const top = Math.max(paso, Math.ceil(mx / paso) * paso);
+  const y = v => mt + h - v / top * h;
+  const bw = w / sem.length, bar = Math.min(bw * 0.72, 46);
+  let g = '';
+  for (let v = 0; v <= top; v += paso) g += `<line class="gl" x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}"/><text x="${ml - 7}" y="${y(v) + 4}" text-anchor="end">${N(v)}</text>`;
+  const cada = Math.ceil(sem.length / 16);
+  sem.forEach((s, i) => {
+    const x = ml + i * bw + (bw - bar) / 2;
+    let acc = 0;
+    const d = new Date(s.k + 'T00:00:00Z'), et = `${d.getUTCDate()} ${MES3[d.getUTCMonth()]}`;
+    for (const k of STK) {
+      if (!s[k]) continue;
+      const y1 = y(acc + s[k]), hh = y(acc) - y1;
+      g += `<rect class="sg-${k}" style="fill:var(--${k})" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bar.toFixed(1)}" height="${Math.max(hh - 0.6, 0.5).toFixed(1)}"><title>Semana del ${et}: ${ST[k].l} ${N(s[k])} de ${N(s.n)} (${P(s[k], s.n)})</title></rect>`;
+      acc += s[k];
+    }
+    if (s.n && sem.length <= 30) g += `<text class="tot" x="${(x + bar / 2).toFixed(1)}" y="${(y(s.n) - 5).toFixed(1)}" text-anchor="middle">${N(s.n)}</text>`;
+    if (i % cada === 0) g += `<text x="${(x + bar / 2).toFixed(1)}" y="${H - 9}" text-anchor="middle">${et}</text>`;
+  });
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="PQRSD recibidas por semana, según seguimiento del cumplimiento">${g}</svg></div>`;
+}
+
+/* =====================================================================
+   Análisis en texto
+   ===================================================================== */
+function cmpTxt(p, ref, nombre) {
+  const d = p - ref;
+  if (Math.abs(d) < 0.5) return `en línea con el ${nombre} (${pc(ref)})`;
+  return `${D(Math.abs(d))} puntos porcentuales por ${d > 0 ? 'encima' : 'debajo'} del ${nombre} (${pc(ref)})`;
+}
+function desglose(s) {
+  const p = [];
+  if (s.ext) p.push(`el ${P(s.ext, s.n)} (${N(s.ext)}) tuvo respuesta extemporánea`);
+  if (s.sin) p.push(`el ${P(s.sin, s.n)} (${N(s.sin)}) no registra evidencia de respuesta`);
+  if (s.anu) p.push(`el ${P(s.anu, s.n)} (${N(s.anu)}) tiene respuesta anulada`);
+  if (s.nd) p.push(`el ${P(s.nd, s.n)} (${N(s.nd)}) no tiene clasificación de cumplimiento`);
+  const a = s.ok ? `El <b>${pc(s.pOk)}</b> (${N(s.ok)}) se respondió dentro del término` : 'Ninguna se respondió dentro del término';
+  return a + (p.length ? '; ' + lista(p) : '') + '.';
+}
+function frDias(s) {
+  if (!s.dN) return 'No registra respuestas emitidas.';
+  if (s.dN === 1) return `La única respuesta emitida tardó ${N(s.dMax)} días.`;
+  return `Las ${N(s.dN)} respuestas emitidas tardaron en promedio ${D(s.dProm)} días (mediana ${D0(s.dMed)}; máximo ${N(s.dMax)}).`;
+}
+function textoLead(sc) {
+  const s = sc.s;
+  if (sc.tipo === 'all')
+    return `Entre el ${fecha(DB.desde)} y el ${fecha(DB.hasta)} se recibieron <b>${N(s.n)} PQRSD</b>, asignadas a ${N(DB.vps.length)} vicepresidencias u oficinas y ${N(DB.nDeps)} dependencias. ${desglose(s)} ${frDias(s)}`;
+  if (sc.tipo === 'vp')
+    return `<b>${esc(sc.nombre)}</b> tiene asignadas <b>${N(s.n)} PQRSD</b> (${P(s.n, DB.s.n)} del total)${sc.hijos.length > 1 ? `, distribuidas en ${N(sc.hijos.length)} dependencias` : ''}. ${desglose(s)} El cumplimiento está ${cmpTxt(s.pOk, DB.s.pOk, 'promedio general')}. ${frDias(s)}`;
+  const mismo = sc.vp.deps.length === 1;
+  return `<b>${esc(sc.nombre)}</b> tiene asignadas <b>${N(s.n)} PQRSD</b>${mismo ? ` (${P(s.n, DB.s.n)} del total)` : `: el ${P(s.n, sc.vp.s.n)} de las de su vicepresidencia y el ${P(s.n, DB.s.n)} del total`}. ${desglose(s)} El cumplimiento está ${mismo ? '' : cmpTxt(s.pOk, sc.vp.s.pOk, 'promedio de su vicepresidencia') + ' y '}${cmpTxt(s.pOk, DB.s.pOk, 'promedio general')}. ${frDias(s)}`;
+}
+const MINN = 10;
+function hallazgos(sc) {
+  const out = [], s = sc.s, rows = sc.rows;
+  const h = sc.hijos && sc.hijos.length > 1 ? sc.hijos : null;
+  const et = sc.tipo === 'all' ? 'vicepresidencias u oficinas' : 'dependencias';
+  if (h) {
+    const t = h[0];
+    out.push(`<b>Volumen.</b> ${esc(t.k)} concentra el ${P(t.s.n, s.n)} de las PQRSD (${N(t.s.n)})${h[1] ? `; le sigue ${esc(h[1].k)} con el ${P(h[1].s.n, s.n)} (${N(h[1].s.n)})` : ''}.`);
+    const c = h.filter(x => x.s.n >= MINN).sort((a, b) => b.s.pOk - a.s.pOk);
+    if (c.length >= 2) {
+      const a = c[0], b = c[c.length - 1];
+      out.push(`<b>Cumplimiento.</b> Entre las ${et} con ${MINN} o más PQRSD, el mayor porcentaje de respuesta en término es el de ${esc(a.k)} (${pc(a.s.pOk)}) y el menor, el de ${esc(b.k)} (${pc(b.s.pOk)}).`);
+    }
+    if (s.sin) {
+      const p = h.filter(x => x.s.sin).sort((a, b) => b.s.sin - a.s.sin).slice(0, 3);
+      const suma = p.reduce((a, x) => a + x.s.sin, 0);
+      out.push(`<b>Sin evidencia de respuesta.</b> ${p.length === 1 ? `Las ${N(s.sin)} PQRSD sin evidencia de respuesta corresponden a ${esc(p[0].k)}.` : `De las ${N(s.sin)} PQRSD sin evidencia de respuesta, ${lista(p.map((x, i) => `${N(x.s.sin)} ${i ? 'a' : 'corresponden a'} ${esc(x.k)}`))}${suma < s.sin ? ` (${P(suma, s.sin)} del total pendiente)` : ''}.`}`);
+    }
+  }
+  const mod = grupos(rows, r => r.modalidad || '(Sin modalidad)'), tem = grupos(rows, r => r.tema || '(Sin tema)');
+  let f = `<b>Tipo de petición.</b> La modalidad más frecuente es ${esc(orac(mod[0].k))} (${P(mod[0].s.n, s.n)})`;
+  f += tem.length ? ` y el tema principal, ${esc(orac(tem[0].k))} (${P(tem[0].s.n, s.n)}).` : '.';
+  const mc = mod.filter(x => x.s.n >= MINN).sort((a, b) => b.s.pOk - a.s.pOk);
+  if (mc.length >= 2) f += ` Entre las modalidades con ${MINN} o más PQRSD, la de mayor cumplimiento es ${esc(orac(mc[0].k))} (${pc(mc[0].s.pOk)}) y la de menor, ${esc(orac(mc[mc.length - 1].k))} (${pc(mc[mc.length - 1].s.pOk)}).`;
+  out.push(f);
+
+  const con = stats(rows.filter(r => r.traslado && norm(r.traslado) !== 'no')), sinT = stats(rows.filter(r => norm(r.traslado) === 'no'));
+  if (con.n >= MINN && sinT.n >= MINN)
+    out.push(`<b>Traslados.</b> Las PQRSD con traslado registrado (${N(con.n)}; ${P(con.n, s.n)}) tienen un cumplimiento de ${pc(con.pOk)}, frente a ${pc(sinT.pOk)} de las que no registran traslado.`);
+
+  const mes = grupos(rows.filter(r => r.fecha), r => r.fecha.slice(0, 7)).sort((a, b) => a.k < b.k ? -1 : 1);
+  if (mes.length > 1)
+    out.push(`<b>Evolución mensual.</b> Por mes de recepción: ${mes.map(m => `${MESES[+m.k.slice(5) - 1]}, ${N(m.s.n)} PQRSD (${pc(m.s.pOk)} en término)`).join('; ')}.`);
+
+  if (!h) {
+    const us = usuariosDe(rows), mayor = [...us].sort((a, b) => b.s.n - a.s.n)[0];
+    let u = `<b>Responsables.</b> ${us.length === 1 ? `Todas las PQRSD están asignadas a ${esc(us[0].k)}.` : `Las PQRSD están asignadas a ${N(us.length)} usuarios; ${esc(mayor.k)} tiene el mayor número (${N(mayor.s.n)}).`}`;
+    const pe = us.filter(x => x.s.sin), np = pe.slice(0, 5).map(x => `${esc(x.k)} (${N(x.s.sin)})`);
+    if (pe.length) u += ` Las PQRSD sin evidencia de respuesta están a cargo de ${pe.length > 5 ? `${np.join(', ')} y ${N(pe.length - 5)} ${pl(pe.length - 5, 'usuario', 'usuarios')} más` : lista(np)}.`;
+    out.push(u);
+  }
+  if (s.n < MINN) out.push(`<b>Nota.</b> Por el bajo número de PQRSD (${N(s.n)}), los porcentajes deben leerse con cautela.`);
+  return out;
+}
+
+/* =====================================================================
+   Tablero: navegación y encabezado
+   ===================================================================== */
+const ICO = {
+  up: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10.5V2.5M4.8 5.5 8 2.3l3.2 3.2M2.5 10.5v2.3c0 .4.3.7.7.7h9.6c.4 0 .7-.3.7-.7v-2.3"/></svg>',
+  doc: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.2 1.8H4.3c-.5 0-.8.3-.8.8v10.8c0 .5.3.8.8.8h7.4c.5 0 .8-.3.8-.8V5.1L9.2 1.8zM9 2v3.3h3.3M5.8 8.2h4.4M5.8 10.8h4.4"/></svg>',
+  save: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v8M4.8 7.5 8 10.7l3.2-3.2M2.5 10.5v2.3c0 .4.3.7.7.7h9.6c.4 0 .7-.3.7-.7v-2.3"/></svg>',
+};
+
+function renderNav() {
+  $('#brand-sub').innerHTML = `Periodo ${fecha(DB.desde)} – ${fecha(DB.hasta)}<br>${N(DB.s.n)} PQRSD · ${esc(DB.archivo)}`;
+  const it = (attrs, cur, nm, s, exp) => `<button class="nv" ${attrs} aria-current="${cur}"${exp != null ? ` aria-expanded="${exp}"` : ''}><span class="nm">${esc(nm)}</span><span class="ct">${N(s.n)}</span><span class="pc">${pc(s.pOk)} en término</span></button>`;
+  let h = `<li>${it('data-ir="all"', !S.vp, 'Todas las vicepresidencias', DB.s)}</li>`, op = `<option value="all"${!S.vp ? ' selected' : ''}>Todas las vicepresidencias (${N(DB.s.n)})</option>`;
+  DB.vps.forEach((v, i) => {
+    const multi = v.deps.length > 1, abierto = S.vp === v;
+    h += `<li>${it(`data-ir="vp" data-i="${i}"`, abierto && !S.dep, v.k, v.s, multi ? abierto : null)}`;
+    if (multi && abierto) h += `<ul>${v.deps.map((d, j) => `<li>${it(`data-ir="dep" data-i="${j}"`, S.dep === d, d.k, d.s)}</li>`).join('')}</ul>`;
+    h += '</li>';
+    op += `<optgroup label="${esc(v.k)}"><option value="vp:${i}"${abierto && !S.dep ? ' selected' : ''}>${esc(v.k)} — toda (${N(v.s.n)})</option>`;
+    if (multi) op += v.deps.map((d, j) => `<option value="dep:${i}:${j}"${S.dep === d ? ' selected' : ''}>${esc(d.k)} (${N(d.s.n)})</option>`).join('');
+    op += '</optgroup>';
+  });
+  $('#nav').innerHTML = h;
+  $('#scope-sel').innerHTML = op;
+}
+
+function renderMain() {
+  const sc = ambito();
+  let crumb = '';
+  if (sc.tipo === 'vp') crumb = `<button data-ir="all">Todas las vicepresidencias</button> <span>›</span> <span>Vicepresidencia u oficina</span>`;
+  else if (sc.tipo === 'dep') crumb = `<button data-ir="all">Todas las vicepresidencias</button> <span>›</span> <button data-ir="vp" data-i="${DB.vps.indexOf(sc.vp)}">${esc(sc.vp.k)}</button> <span>›</span> <span>Dependencia</span>`;
+  else crumb = `<span>Resumen general</span>`;
+  $('#main').innerHTML = `
+    <div class="top">
+      <div class="crumb">${crumb}</div>
+      <div class="acts">
+        <button class="btn" data-act="cargar">${ICO.up}Cargar CSV</button>
+        <button class="btn" data-act="copia" title="Descarga este tablero como un único archivo HTML con la base incluida, para abrirlo sin conexión o compartirlo">${ICO.save}Guardar copia con datos</button>
+        <button class="btn btn-p" data-act="reporte">${ICO.doc}Generar reporte</button>
+      </div>
+    </div>
+    <h1 class="ttl">${esc(sc.nombre)}${sc.tipo === 'dep' && sc.dep.cod ? `<small>Código ${esc(sc.dep.cod)}</small>` : ''}</h1>
+    ${S.error ? `<div class="err" role="alert">${esc(S.error)}</div>` : ''}
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="res" aria-selected="${S.tab === 'res'}">Resumen estadístico</button>
+      <button class="tab" role="tab" data-tab="seg" aria-selected="${S.tab === 'seg'}">Seguimiento de radicados<span class="cnt">${N(sc.s.n)}</span></button>
+    </div>
+    <div id="view"></div>`;
+  if (S.tab === 'res') renderResumen(sc); else renderSeg(sc);
+}
+
+/* =====================================================================
+   Pestaña: resumen estadístico
+   ===================================================================== */
+function ordenar(items, o) {
+  const v = g => o.k === 'k' ? null : o.k === 'part' ? g.s.n : (g.s[o.k] ?? -1);
+  return items.map((g, i) => ({ ...g, i })).sort((a, b) => o.k === 'k' ? o.d * String(a.k).localeCompare(String(b.k), 'es') : o.d * (v(a) - v(b)) || b.s.n - a.s.n);
+}
+function usuariosDe(rows) {
+  return grupos(rows, r => r.respKey).map(g => ({ ...g, key: g.k, k: g.rows[0].resp }))
+    .sort((a, b) => b.s.sin - a.s.sin || b.s.ext - a.s.ext || b.s.n - a.s.n || a.k.localeCompare(b.k, 'es'));
+}
+function notasDatos() {
+  const n = [
+    'La clasificación de cumplimiento se toma tal como viene en las columnas «Cumplimiento» y «Seguimiento Cumplimiento» de la base; el tablero no la recalcula.',
+    '«En término» corresponde a las PQRSD marcadas CUMPLE. El porcentaje se calcula sobre el total de PQRSD asignadas, incluidas las anuladas y las que no tienen respuesta.',
+    'Los días de respuesta provienen de la columna «Dias Respuesta» y solo existen para las PQRSD con radicado de salida.',
+    'La vicepresidencia y la dependencia son las de las columnas «Nombre Vicepresidencia Actual» y «Nombre Dependencia Actual». La evolución en el tiempo usa la fecha de recepción.',
+    'Los responsables se agrupan por el correo del usuario actual, porque un mismo funcionario aparece unas veces con su usuario de sistema y otras con su nombre completo.',
+  ];
+  if (!DB.radOk) n.unshift('<b>Números de radicado ilegibles:</b> en el archivo la columna «Radicado» viene en notación científica (por ejemplo, 2,02641E+13), de modo que los radicados no se distinguen entre sí. Cada PQRSD se identifica aquí por su número de fila en el archivo. Para conservar los radicados, exporte esa columna con formato de texto antes de guardar el CSV.');
+  return n;
+}
+
+function renderResumen(sc) {
+  const s = sc.s, h = sc.hijos && sc.hijos.length > 1 ? sc.hijos : null;
+  let html = `<p class="lead">${textoLead(sc)}</p>${kpis(sc, true)}<div class="comp">${stk(s)}${leyenda(s)}</div>`;
+
+  html += `<section class="sec"><div class="sec-h"><h2>Análisis</h2></div><div class="card pad"><ul class="find">${hallazgos(sc).map(x => `<li>${x}</li>`).join('')}</ul></div></section>`;
+
+  if (h) {
+    const et = sc.tipo === 'all' ? 'Vicepresidencia u oficina' : 'Dependencia';
+    html += `<section class="sec"><div class="sec-h"><h2>Comparativo por ${sc.tipo === 'all' ? 'vicepresidencia' : 'dependencia'}</h2><button class="lnk" data-act="exp-resumen">Exportar resumen por dependencia (CSV)</button></div>
+      <div class="card tw">${tablaCmp(ordenar(h, S.cmp), s, { etiqueta: et, nav: sc.tipo === 'all' ? 'vp' : 'dep', orden: S.cmp, cod: sc.tipo === 'vp' })}</div></section>`;
+  }
+
+  html += `<section class="sec"><div class="sec-h"><h2>PQRSD recibidas por semana</h2><p>Según la fecha de recepción; cada columna es una semana que inicia el lunes indicado</p></div>
+    <div class="card pad">${grafSemanal(sc.rows)}${leyenda(s)}</div></section>`;
+
+  html += `<section class="sec"><div class="sec-h"><h2>Composición</h2><p>La longitud de la barra representa el número de PQRSD; los colores, el seguimiento del cumplimiento</p></div>
+    <div class="grid2">
+      ${listaCat('Modalidad de petición', sc.rows, r => r.modalidad || '(Sin modalidad)', 9)}
+      ${listaCat('Tema', sc.rows, r => r.tema || '(Sin tema)', 9)}
+      ${listaCat('Traslado', sc.rows, r => r.traslado || '(Sin dato)', 6, { crudo: true })}
+      ${listaCat('Estado del radicado', sc.rows, r => r.estado || '(Sin estado)', 6, { crudo: true })}
+      ${listaCat('Departamento de origen', sc.rows, r => r.depto || '(Sin dato)', 9)}
+      ${listaCat('Principales remitentes', sc.rows, r => r.remitente || '(Sin remitente)', 9, { crudo: true, col: 'Remitente' })}
+    </div></section>`;
+
+  const us = usuariosDe(sc.rows), lim = S.usuariosTodos ? us.length : 10;
+  html += `<section class="sec"><div class="sec-h"><h2>Responsables (usuario actual)</h2><p>${N(us.length)} ${pl(us.length, 'usuario', 'usuarios')} · ordenados por PQRSD sin respuesta y extemporáneas · clic para ver sus radicados</p></div>
+    <div class="card tw">${tablaCmp(us.slice(0, lim).map((g, i) => ({ ...g, i })), s, { etiqueta: 'Usuario', nav: 'usr', pie: false })}</div>
+    ${us.length > 10 ? `<p style="margin-top:10px"><button class="lnk" data-act="usr-todos">${S.usuariosTodos ? 'Mostrar solo los 10 primeros' : `Mostrar los ${N(us.length)} usuarios`}</button></p>` : ''}</section>`;
+
+  if (s.sin) {
+    const hoy = hoyISO(), pe = sc.rows.filter(r => r.st === 'sin').sort((a, b) => (a.vence || '9') < (b.vence || '9') ? -1 : 1);
+    html += `<section class="sec"><div class="sec-h"><h2>PQRSD sin evidencia de respuesta</h2><p>${pe.length > 8 ? `Las 8 con vencimiento más antiguo, de ${N(pe.length)}` : `${N(pe.length)} ${pl(pe.length, 'radicado', 'radicados')}`}</p></div>
+      <div class="card tw"><table class="seg"><thead><tr><th>${DB.radOk ? 'Radicado' : 'Fila'}</th><th>Vence</th><th class="r">Días vencida</th><th>Asunto y remitente</th><th>${sc.tipo === 'dep' ? 'Usuario' : 'Dependencia y usuario'}</th></tr></thead><tbody>
+      ${pe.slice(0, 8).map(r => `<tr class="clk" data-det="${r.fila}"><td class="nw"><button class="nm-b">${esc(DB.radOk ? r.id : N(r.fila))}</button></td><td class="nw">${fecha(r.vence)}</td><td class="num">${r.vence && r.vence < hoy ? `<span class="late">${N(dias(r.vence, hoy))}</span>` : '—'}</td>
+        <td class="as"><b>${esc(r.asunto || '(Sin asunto)')}</b><span>${esc(r.remitente)}</span></td>
+        <td>${sc.tipo === 'dep' ? esc(r.resp) : `${esc(r.dep)}<span class="sm">${esc(r.resp)}</span>`}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p style="margin-top:10px"><button class="lnk" data-act="ver-sin">Ver ${pe.length === 1 ? 'el radicado' : `los ${N(pe.length)} radicados`} en Seguimiento →</button> <span class="muted" style="font-size:12.5px;margin-left:8px">Días calendario desde el vencimiento, al ${fecha(hoy)}.</span></p></section>`;
+  }
+
+  html += `<details class="notes"><summary>Notas sobre los datos y el cálculo</summary><ul>${notasDatos().map(x => `<li>${x}</li>`).join('')}</ul></details>`;
+  $('#view').innerHTML = html;
+}
+
+/* =====================================================================
+   Pestaña: seguimiento de radicados
+   ===================================================================== */
+function filtrar(rows, sinEstado) {
+  const f = S.f, q = norm(f.q).split(' ').filter(Boolean);
+  return rows.filter(r =>
+    (sinEstado || !f.st || r.st === f.st) &&
+    (!f.modalidad || r.modalidad === f.modalidad) &&
+    (!f.estado || (r.estado || '(Sin estado)') === f.estado) &&
+    (!f.mes || (r.fecha || '').slice(0, 7) === f.mes) &&
+    (!f.traslado || (r.traslado || '(Sin dato)') === f.traslado) &&
+    (!f.usuario || r.respKey === f.usuario) &&
+    q.every(t => r.busca.includes(t)));
+}
+const ORD = {
+  fila: r => r.fila, fecha: r => r.fecha || '', vence: r => r.vence || '', modalidad: r => r.modalidad, dep: r => r.dep + ' ' + r.resp,
+  usuario: r => r.resp, diasResp: r => r.diasResp ?? -1, st: r => STK.indexOf(r.st),
+};
+function renderSeg(sc) {
+  const f = S.f;
+  const ops = (fn, sel, fmt = x => x) => [...new Set(sc.rows.map(fn))].sort((a, b) => String(a).localeCompare(String(b), 'es')).map(v => `<option value="${esc(v)}"${v === sel ? ' selected' : ''}>${esc(fmt(v))}</option>`).join('');
+  const meses = [...new Set(sc.rows.map(r => (r.fecha || '').slice(0, 7)).filter(Boolean))].sort();
+  $('#view').innerHTML = `
+    ${DB.radOk ? '' : `<div class="note"><b>Los números de radicado no son legibles en este archivo</b> (vienen en notación científica, p. ej. 2,02641E+13). Cada PQRSD se identifica por su número de fila en el CSV, que coincide con la fila al abrirlo en Excel.</div>`}
+    <div class="filters">
+      <div class="fld"><label for="f-q">Buscar</label><input id="f-q" type="search" placeholder="Asunto, remitente, usuario…" value="${esc(f.q)}" autocomplete="off"></div>
+      <div class="fld"><label for="f-modalidad">Modalidad</label><select id="f-modalidad" data-f="modalidad"><option value="">Todas</option>${ops(r => r.modalidad, f.modalidad, orac)}</select></div>
+      <div class="fld"><label for="f-mes">Mes de recepción</label><select id="f-mes" data-f="mes"><option value="">Todos</option>${meses.map(m => `<option value="${m}"${m === f.mes ? ' selected' : ''}>${MESES[+m.slice(5) - 1]} de ${m.slice(0, 4)}</option>`).join('')}</select></div>
+      <div class="fld"><label for="f-estado">Estado</label><select id="f-estado" data-f="estado"><option value="">Todos</option>${ops(r => r.estado || '(Sin estado)', f.estado)}</select></div>
+      <div class="fld"><label for="f-traslado">Traslado</label><select id="f-traslado" data-f="traslado"><option value="">Todos</option>${ops(r => r.traslado || '(Sin dato)', f.traslado)}</select></div>
+    </div>
+    <div id="seg-res"></div>`;
+  renderSegRes(sc);
+}
+function renderSegRes(sc = ambito()) {
+  const f = S.f, base = filtrar(sc.rows, true), cont = stats(base);
+  const rows = f.st ? base.filter(r => r.st === f.st) : base;
+  const k = ORD[f.orden] || ORD.fila;
+  rows.sort((a, b) => { const x = k(a), y = k(b); return (x < y ? -1 : x > y ? 1 : a.fila - b.fila) * f.dir; });
+  const pags = Math.max(1, Math.ceil(rows.length / PAG));
+  if (f.pag >= pags) f.pag = pags - 1;
+  const vis = rows.slice(f.pag * PAG, f.pag * PAG + PAG), hoy = hoyISO();
+  const chip = (st, t, n) => `<button class="chip" data-st="${st}" aria-pressed="${f.st === st}">${st ? `<i class="sg-${st}"></i>` : ''}${t} <b>${N(n)}</b></button>`;
+  const th = (key, t, c = '') => { const a = f.orden === key; return `<th class="${c}"${a ? ` aria-sort="${f.dir > 0 ? 'ascending' : 'descending'}"` : ''}><button data-ord="${key}">${t}${a ? `<span class="ar">${f.dir > 0 ? '▲' : '▼'}</span>` : ''}</button></th>`; };
+  const activos = f.q || f.st || f.modalidad || f.estado || f.mes || f.traslado || f.usuario;
+  const verDep = sc.tipo !== 'dep';
+  $('#seg-res').innerHTML = `
+    <div class="chips" role="group" aria-label="Seguimiento del cumplimiento">${chip('', 'Todas', cont.n)}${STK.filter(x => x !== 'nd' || cont.nd).map(x => chip(x, ST[x].c, cont[x])).join('')}
+      ${f.usuario ? `<button class="chip" data-act="quitar-usr" aria-pressed="true" title="Quitar filtro de usuario">Usuario: ${esc(f.usuarioNom)} ✕</button>` : ''}</div>
+    <div class="bar-res"><span><b>${N(rows.length)}</b> ${pl(rows.length, 'radicado', 'radicados')}${activos ? ` de ${N(sc.rows.length)}` : ''}${rows.length && !f.st ? ` · ${pc(cont.pOk)} en término` : ''}</span>
+      <span class="acts">${activos ? '<button class="lnk" data-act="limpiar">Limpiar filtros</button>' : ''}<button class="lnk" data-act="exp-seg"${rows.length ? '' : ' disabled'}>Exportar estos radicados (CSV)</button></span></div>
+    <div class="card tw">${rows.length ? `<table class="seg"><thead><tr>
+        ${th('fila', DB.radOk ? 'Radicado' : 'Fila')}${th('fecha', 'Recepción')}${th('vence', 'Vence')}${th('modalidad', 'Modalidad y asunto')}${verDep ? th('dep', 'Dependencia y usuario') : th('usuario', 'Usuario')}${th('diasResp', 'Días resp.', 'r')}${th('st', 'Seguimiento')}
+      </tr></thead><tbody>${vis.map(r => `<tr class="clk" data-det="${r.fila}">
+        <td class="nw"><button class="nm-b">${esc(DB.radOk ? r.id : N(r.fila))}</button></td>
+        <td class="nw">${fecha(r.fecha)}</td>
+        <td class="nw">${fecha(r.vence)}${r.st === 'sin' && r.vence && r.vence < hoy ? `<span class="sm late">hace ${N(dias(r.vence, hoy))} días</span>` : ''}</td>
+        <td class="as"><span>${esc(orac(r.modalidad))}</span><b>${esc(r.asunto || '(Sin asunto)')}</b><span>${esc(r.remitente)}</span></td>
+        <td>${verDep ? `${esc(r.dep)}<span class="sm">${esc(r.resp)}</span>` : esc(r.resp)}</td>
+        <td class="num">${r.diasResp == null ? '—' : N(r.diasResp)}${r.termino != null ? `<span class="sm">término ${N(r.termino)}</span>` : ''}</td>
+        <td class="nw">${bdg(r.st)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Ningún radicado coincide con los filtros. <button class="lnk" data-act="limpiar">Limpiar filtros</button></div>'}</div>
+    ${pags > 1 ? `<div class="pager"><button class="btn" data-pag="-1"${f.pag === 0 ? ' disabled' : ''}>← Anterior</button><span>Página ${N(f.pag + 1)} de ${N(pags)}</span><button class="btn" data-pag="1"${f.pag >= pags - 1 ? ' disabled' : ''}>Siguiente →</button></div>` : ''}`;
+  S._vis = rows;
+}
+
+function abrirDetalle(fila) {
+  const r = DB.rows.find(x => x.fila === fila);
+  if (!r) return;
+  const hoy = hoyISO();
+  const dd = (t, v) => `<div><dt>${t}</dt><dd>${v === '' || v == null ? '<span class="muted">—</span>' : esc(v)}</dd></div>`;
+  const lugar = [r.ciudad, r.depto, r.pais].filter(x => x && norm(x) !== 'todos').join(', ');
+  $('#dlg-c').innerHTML = `
+    <div class="dlg-h"><div><h2 id="dlg-t">${DB.radOk ? 'Radicado ' + esc(r.radicado) : 'PQRSD en la fila ' + N(r.fila) + ' del archivo'} &nbsp;${bdg(r.st)}</h2>
+      <p>Recibida el ${fecha(r.fecha)} · vence el ${fecha(r.vence)}${r.st === 'sin' && r.vence && r.vence < hoy ? ` · <span class="late">vencida hace ${N(dias(r.vence, hoy))} días calendario</span>` : ''}</p></div>
+      <button class="x" data-act="cerrar-dlg" aria-label="Cerrar">×</button></div>
+    <div class="dlg-b">
+      <p class="asunto">${esc(r.asunto || '(Sin asunto)')}</p>
+      <h3>Petición</h3><dl class="dl">${dd('Modalidad', orac(r.modalidad))}${dd('Tema', orac(r.tema))}${dd('Término para responder', r.termino != null ? r.termino + ' días' : '')}${dd('Radicado (como viene en el archivo)', r.radicado)}${dd('Fecha de radicación', r.fRad && fecha(r.fRad))}${dd('Fecha de recepción', r.fRec && fecha(r.fRec))}</dl>
+      <h3>Peticionario</h3><dl class="dl">${dd('Remitente', r.remitente)}${dd('Teléfono', r.telefono)}${dd('Origen', lugar)}</dl>
+      <h3>Asignación</h3><dl class="dl">${dd('Vicepresidencia', r.vp)}${dd('Dependencia', r.dep + (r.depCod ? ` (${r.depCod})` : ''))}${dd('Usuario actual', r.usuario)}${dd('Correo', r.correo)}${dd('Usuario anterior', r.usuarioAnt)}${dd('Dependencia anterior', r.depAnt)}</dl>
+      <h3>Respuesta y trámite</h3><dl class="dl">${dd('Seguimiento del cumplimiento', r.seguimiento)}${dd('Cumplimiento', r.cumplimiento)}${dd('Radicado de salida', r.radSalida)}${dd('Fecha de salida', r.fSalida && fecha(r.fSalida))}${dd('Días de respuesta', r.diasResp)}${dd('Traslado', r.traslado + (r.diasTraslado != null ? ` · ${r.diasTraslado} días` : ''))}${dd('Estado', r.estado)}${dd('Fecha de impresión', r.fImpreso && fecha(r.fImpreso))}${dd('Fecha de envío', r.fEnvio && fecha(r.fEnvio))}</dl>
+      <h3>Clasificación documental</h3><dl class="dl">${dd('Serie', r.serie)}${dd('Subserie', r.subserie)}${dd('Responsable de tipificación', r.respTip)}${dd('Fecha de tipificación', r.fTip && fecha(r.fTip))}</dl>
+    </div>`;
+  const d = $('#dlg');
+  if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  d.scrollTop = 0;
+}
+
+/* =====================================================================
+   Reporte
+   ===================================================================== */
+function catTabla(rows, fn, max, titulo) {
+  const g = grupos(rows, fn).slice(0, max);
+  return `<table><thead><tr><th>${titulo}</th><th class="r">PQRSD</th><th class="r">En término</th><th class="r">Sin resp.</th></tr></thead><tbody>${g.map(x => `<tr><td>${esc(orac(x.k))}</td><td class="num">${N(x.s.n)}</td><td class="num">${pc(x.s.pOk)}</td><td class="num">${N(x.s.sin)}</td></tr>`).join('')}</tbody></table>`;
+}
+function usrTabla(rows, max) {
+  const u = usuariosDe(rows);
+  return `<table><thead><tr><th>Usuario${u.length > max ? ` (${max} de ${N(u.length)})` : ''}</th><th class="r">PQRSD</th><th class="r">En término</th><th class="r">Extemp.</th><th class="r">Sin resp.</th></tr></thead><tbody>${u.slice(0, max).map(x => `<tr><td>${esc(x.k)}</td><td class="num">${N(x.s.n)}</td><td class="num">${pc(x.s.pOk)}</td><td class="num">${N(x.s.ext)}</td><td class="num">${N(x.s.sin)}</td></tr>`).join('')}</tbody></table>`;
+}
+function repBloque(sc) {
+  return `${kpis(sc, false)}<div class="comp">${stk(sc.s)}${leyenda(sc.s)}</div><p>${textoLead(sc)}</p>
+    <h3>Análisis</h3><ul class="find">${hallazgos(sc).map(x => `<li>${x}</li>`).join('')}</ul>`;
+}
+function repDep(d) {
+  const sc = ambitoDep(d), s = d.s;
+  return `<div class="dep"><h4 class="t">${esc(d.k)}${d.cod ? `<small>Código ${esc(d.cod)}</small>` : ''}</h4>
+    <div class="line"><span><b>${N(s.n)}</b>PQRSD</span><span><b>${pc(s.pOk)}</b>en término</span><span><b>${N(s.ext)}</b>${pl(s.ext, 'extemporánea', 'extemporáneas')}</span><span><b>${N(s.sin)}</b>sin evidencia de respuesta</span><span><b>${D(s.dProm)}</b>días promedio</span></div>
+    ${stk(s)}
+    <p>${textoLead(sc)}</p>
+    <p>${hallazgos(sc).map(x => x.replace(/^<b>[^<]*<\/b>\s*/, '')).join(' ')}</p>
+    <div class="cols"><div>${catTabla(d.rows, r => r.modalidad || '(Sin modalidad)', 4, 'Modalidades principales')}</div><div>${usrTabla(d.rows, 5)}</div></div>
+  </div>`;
+}
+function repVp(v, nro) {
+  const sc = ambitoVp(v), multi = v.deps.length > 1;
+  let h = `<section class="vp"><h2><span class="nro">${nro}.</span>${esc(v.k)}</h2>${repBloque(sc)}`;
+  if (multi) {
+    h += `<h3>Comparativo por dependencia</h3><div class="tbl">${tablaCmp(v.deps, v.s, { etiqueta: 'Dependencia', cod: true })}</div>`;
+  } else {
+    h += `<p class="sub">Esta vicepresidencia u oficina registra una sola dependencia${v.deps[0].cod ? ` (código ${esc(v.deps[0].cod)})` : ''}; el análisis anterior corresponde a ella.</p>`;
+  }
+  h += `<div class="grid2" style="margin-top:14px">${listaCat('Modalidad de petición', v.rows, r => r.modalidad || '(Sin modalidad)', 7)}${listaCat('Tema', v.rows, r => r.tema || '(Sin tema)', 7)}</div>`;
+  if (multi) h += `<h3>Análisis por dependencia</h3>${v.deps.map(repDep).join('')}`;
+  else h += `<h3>Responsables</h3><div class="tbl">${usrTabla(v.rows, 12)}</div>`;
+  return h + '</section>';
+}
+function reporteHTML() {
+  const sel = S.repVp, vps = sel ? [sel] : DB.vps, hoy = hoyISO();
+  const rows = sel ? sel.rows : DB.rows;
+  let n = 0;
+  let h = `<header class="cover"><div class="ey">Informe de seguimiento</div><h1>Peticiones, quejas, reclamos, sugerencias y denuncias (PQRSD)</h1>
+    <dl class="meta"><div><dt>Periodo</dt><dd>${fecha(DB.desde)} – ${fecha(DB.hasta)}</dd></div><div><dt>Alcance</dt><dd>${sel ? esc(sel.k) : 'Todas las vicepresidencias y dependencias'}</dd></div><div><dt>PQRSD analizadas</dt><dd>${N(rows.length)}</dd></div><div><dt>Fecha del informe</dt><dd>${fechaLarga(hoy)}</dd></div></dl></header>`;
+  if (!sel) {
+    const sc = ambitoAll();
+    h += `<section><h2><span class="nro">${++n}.</span>Resumen general</h2>${repBloque(sc)}
+      <h3>Comparativo por vicepresidencia</h3><div class="tbl">${tablaCmp(DB.vps, DB.s, { etiqueta: 'Vicepresidencia u oficina' })}</div>
+      <h3>PQRSD recibidas por semana</h3><p class="sub">Según la fecha de recepción; cada columna es una semana que inicia el lunes indicado.</p>${grafSemanal(DB.rows)}${leyenda(DB.s)}
+      <div class="grid2" style="margin-top:16px">${listaCat('Modalidad de petición', DB.rows, r => r.modalidad || '(Sin modalidad)', 8)}${listaCat('Tema', DB.rows, r => r.tema || '(Sin tema)', 8)}</div></section>`;
+  }
+  h += vps.map(v => repVp(v, ++n)).join('');
+
+  const pe = rows.filter(r => r.st === 'sin').sort((a, b) => a.vp.localeCompare(b.vp, 'es') || a.dep.localeCompare(b.dep, 'es') || ((a.vence || '9') < (b.vence || '9') ? -1 : 1));
+  if (S.repAnexo && pe.length) {
+    h += `<section class="vp anexo"><h2><span class="nro">Anexo.</span>PQRSD sin evidencia de respuesta</h2><p class="sub">${N(pe.length)} ${pl(pe.length, 'radicado', 'radicados')}, por dependencia y fecha de vencimiento. Días vencida: días calendario desde el vencimiento hasta el ${fecha(hoy)}.</p>
+      <div class="tbl"><table><thead><tr><th>${DB.radOk ? 'Radicado' : 'Fila'}</th><th>Dependencia</th><th>Usuario</th><th>Recepción</th><th>Vence</th><th class="r">Días vencida</th><th>Modalidad y asunto</th></tr></thead><tbody>
+      ${pe.map((r, i) => `${!sel && (!i || pe[i - 1].vp !== r.vp) ? `<tr class="grp"><td colspan="7">${esc(r.vp)} · ${N(pe.filter(x => x.vp === r.vp).length)}</td></tr>` : ''}<tr><td class="num">${esc(DB.radOk ? r.id : N(r.fila))}</td><td class="dp">${esc(r.dep)}</td><td class="us">${esc(r.resp)}</td><td class="num">${fecha(r.fecha)}</td><td class="num">${fecha(r.vence)}</td><td class="num">${r.vence && r.vence < hoy ? N(dias(r.vence, hoy)) : '—'}</td><td class="as"><span class="muted">${esc(orac(r.modalidad))}.</span> ${esc(r.asunto.length > 150 ? r.asunto.slice(0, 150).trimEnd() + '…' : r.asunto)}</td></tr>`).join('')}
+      </tbody></table></div></section>`;
+  }
+  h += `<section><h3>Notas sobre los datos y el cálculo</h3><ol class="met">${notasDatos().map(x => `<li>${x}</li>`).join('')}</ol></section>
+    <div class="foot">Fuente: ${esc(DB.archivo)} · ${N(DB.rows.length)} registros · Informe generado el ${fechaLarga(hoy)} con el tablero de seguimiento PQRSD.</div>`;
+  return h;
+}
+function abrirReporte() {
+  S.repVp = null;
+  $('#rep-vp').innerHTML = `<option value="">Todas las vicepresidencias y dependencias</option>` + DB.vps.map((v, i) => `<option value="${i}"${S.repVp === v ? ' selected' : ''}>${esc(v.k)}</option>`).join('');
+  $('#rep-anexo').checked = S.repAnexo;
+  $('#doc').innerHTML = reporteHTML();
+  $('#app').hidden = true; $('#reporte').hidden = false;
+  window.scrollTo(0, 0);
+}
+function cerrarReporte() { $('#reporte').hidden = true; $('#app').hidden = false; window.scrollTo(0, 0); }
+const sufijo = () => `${DB.desde}_a_${DB.hasta}`;
+function descargarReporte() {
+  const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
+  const html = `<!doctype html>\n<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Informe de seguimiento PQRSD ${fecha(DB.desde)} – ${fecha(DB.hasta)}</title><style>${css}</style></head><body class="solo"><article class="doc">${$('#doc').innerHTML}</article></body></html>`;
+  descargar(`informe-pqrsd_${sufijo()}${S.repVp ? '_' + norm(S.repVp.k).replace(/ /g, '-') : ''}.html`, html, 'text/html;charset=utf-8');
+}
+
+/* =====================================================================
+   Exportaciones
+   ===================================================================== */
+function exportarSeg() {
+  const ks = COLS.map(c => c[0]);
+  const filas = [['Fila en el archivo', ...ks.map(k => ETIQ[k]), 'Clasificación']];
+  for (const r of S._vis || []) filas.push([r.fila, ...ks.map(k => FECHAS.includes(k) ? (r[k] ? fecha(r[k]) : '') : r[k] ?? ''), ST[r.st].l]);
+  descargar(`pqrsd-radicados_${sufijo()}.csv`, aCSV(filas), 'text/csv;charset=utf-8');
+}
+function exportarResumen() {
+  const filas = [['Vicepresidencia', 'Dependencia', 'Código', 'PQRSD', '% del total', 'En término', '% en término', 'Extemporáneas', 'Sin evidencia de respuesta', 'Anuladas', 'Días de respuesta (promedio)', 'Días de respuesta (mediana)', 'Días de respuesta (máximo)']];
+  const f = (vp, dep, cod, s) => [vp, dep, cod, s.n, D(s.n / DB.s.n * 100), s.ok, D(s.pOk), s.ext, s.sin, s.anu, s.dProm == null ? '' : D(s.dProm), s.dMed == null ? '' : D0(s.dMed), s.dMax ?? ''];
+  for (const v of (S.vp ? [S.vp] : DB.vps)) {
+    filas.push(f(v.k, '(Total vicepresidencia)', '', v.s));
+    for (const d of v.deps) filas.push(f(v.k, d.k, d.cod, d.s));
+  }
+  if (!S.vp) filas.push(f('(Total general)', '', '', DB.s));
+  descargar(`pqrsd-resumen-dependencias_${sufijo()}.csv`, aCSV(filas), 'text/csv;charset=utf-8');
+}
+function guardarCopia() {
+  const c = document.documentElement.cloneNode(true);
+  c.querySelectorAll('[data-dyn]').forEach(e => { e.innerHTML = ''; });
+  c.querySelector('#app').hidden = false; c.querySelector('#reporte').hidden = true;
+  c.querySelector('#dlg').removeAttribute('open');
+  c.querySelector('#datos').textContent = JSON.stringify({ archivo: DB.archivo, texto: DB.texto }).replace(/</g, '\\u003c');
+  descargar(`seguimiento-pqrsd_${sufijo()}.html`, '<!doctype html>\n' + c.outerHTML, 'text/html;charset=utf-8');
+}
+
+/* =====================================================================
+   Carga de archivos
+   ===================================================================== */
+function bienvenida(error) {
+  $('#brand-sub').textContent = 'Sin base de datos cargada';
+  $('#app').classList.add('vacio');
+  $('#nav').innerHTML = ''; $('#scope-sel').innerHTML = '<option>Sin datos</option>';
+  $('#main').innerHTML = `<div class="welcome"><h1>Cargue la base de datos de PQRSD</h1>
+    <p>Seleccione el archivo CSV exportado del listado de radicados. El tablero calcula el resumen por vicepresidencia y dependencia, permite hacer seguimiento a cada radicado y genera el reporte.</p>
+    <div class="drop" id="drop"><button class="btn btn-p" data-act="cargar">${ICO.up}Seleccionar archivo CSV</button><p>o arrastre el archivo hasta aquí</p></div>
+    <p style="font-size:13px">El archivo se procesa en este equipo: no se envía a ningún servidor.</p>
+    ${error ? `<div class="err" role="alert">${esc(error)}</div>` : ''}</div>`;
+}
+function usar(texto, archivo) {
+  const db = construir(texto, archivo);
+  DB = db;
+  Object.assign(S, { vp: null, dep: null, tab: 'res', f: F0(), cmp: { k: 'n', d: -1 }, usuariosTodos: false, repVp: null, error: '' });
+  $('#reporte').hidden = true; $('#app').hidden = false; $('#app').classList.remove('vacio');
+  render();
+}
+async function leerArchivo(file) {
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    let texto;
+    try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+    catch { texto = new TextDecoder('windows-1252').decode(buf); }
+    usar(texto, file.name);
+  } catch (e) {
+    const msg = `No se pudo cargar «${file.name}». ${e.message || e}`;
+    if (DB) { S.error = msg; renderMain(); } else bienvenida(msg);
+  }
+}
+function render() { renderNav(); renderMain(); }
+
+/* =====================================================================
+   Eventos
+   ===================================================================== */
+function ir(tipo, i) {
+  if (tipo === 'all') { S.vp = null; S.dep = null; }
+  else if (tipo === 'vp') { S.vp = DB.vps[i]; S.dep = null; }
+  else if (tipo === 'dep') { S.dep = S.vp.deps[i]; }
+  S.f.pag = 0; S.f.usuario = ''; S.usuariosTodos = false; S.error = '';
+  for (const k of ['modalidad', 'estado', 'mes', 'traslado']) S.f[k] = '';
+  render();
+  window.scrollTo(0, 0);
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-ir],[data-act],[data-tab],[data-cmp],[data-st],[data-ord],[data-pag],[data-det]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.ir === 'usr') {
+    const us = usuariosDe(ambito().rows)[+d.i];
+    if (us) { S.f = F0(); S.f.usuario = us.key; S.f.usuarioNom = us.k; S.tab = 'seg'; renderMain(); window.scrollTo(0, 0); }
+  } else if (d.ir) ir(d.ir, +d.i);
+  else if (d.tab) { S.tab = d.tab; renderMain(); }
+  else if (d.cmp) { S.cmp = S.cmp.k === d.cmp ? { k: d.cmp, d: -S.cmp.d } : { k: d.cmp, d: d.cmp === 'k' ? 1 : -1 }; renderMain(); }
+  else if (d.st != null) { S.f.st = d.st; S.f.pag = 0; renderSegRes(); }
+  else if (d.ord) { if (S.f.orden === d.ord) S.f.dir *= -1; else { S.f.orden = d.ord; S.f.dir = 1; } S.f.pag = 0; renderSegRes(); }
+  else if (d.pag) { S.f.pag += +d.pag; renderSegRes(); $('#seg-res').scrollIntoView({ block: 'start' }); }
+  else if (d.det) abrirDetalle(+d.det);
+  else switch (d.act) {
+    case 'cargar': $('#file').value = ''; $('#file').click(); break;
+    case 'copia': guardarCopia(); break;
+    case 'reporte': abrirReporte(); break;
+    case 'rep-cerrar': cerrarReporte(); break;
+    case 'rep-print': window.print(); break;
+    case 'rep-html': descargarReporte(); break;
+    case 'ver-sin': S.f = F0(); S.f.st = 'sin'; S.f.orden = 'vence'; S.tab = 'seg'; renderMain(); window.scrollTo(0, 0); break;
+    case 'limpiar': S.f = F0(); renderMain(); break;
+    case 'quitar-usr': S.f.usuario = ''; S.f.pag = 0; renderSegRes(); break;
+    case 'usr-todos': S.usuariosTodos = !S.usuariosTodos; renderMain(); break;
+    case 'exp-seg': exportarSeg(); break;
+    case 'exp-resumen': exportarResumen(); break;
+    case 'cerrar-dlg': $('#dlg').close ? $('#dlg').close() : $('#dlg').removeAttribute('open'); break;
+  }
+});
+let tq;
+document.addEventListener('input', e => {
+  if (e.target.id === 'f-q') { clearTimeout(tq); tq = setTimeout(() => { S.f.q = e.target.value; S.f.pag = 0; renderSegRes(); }, 140); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.f) { S.f[t.dataset.f] = t.value; S.f.pag = 0; renderSegRes(); }
+  else if (t.id === 'scope-sel') {
+    const [tipo, i, j] = t.value.split(':');
+    if (tipo === 'dep') { S.vp = DB.vps[+i]; ir('dep', +j); } else ir(tipo, +i);
+  }
+  else if (t.id === 'rep-vp') { S.repVp = t.value === '' ? null : DB.vps[+t.value]; $('#doc').innerHTML = reporteHTML(); window.scrollTo(0, 0); }
+  else if (t.id === 'rep-anexo') { S.repAnexo = t.checked; $('#doc').innerHTML = reporteHTML(); }
+  else if (t.id === 'file') leerArchivo(t.files[0]);
+});
+$('#dlg').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+document.addEventListener('dragover', e => { e.preventDefault(); const z = $('#drop'); if (z) z.classList.add('on'); });
+document.addEventListener('dragleave', e => { const z = $('#drop'); if (z && !e.relatedTarget) z.classList.remove('on'); });
+document.addEventListener('drop', e => { e.preventDefault(); const z = $('#drop'); if (z) z.classList.remove('on'); if (e.dataTransfer.files.length) leerArchivo(e.dataTransfer.files[0]); });
+
+/* =====================================================================
+   Inicio
+   ===================================================================== */
+(function iniciar() {
+  const crudo = $('#datos').textContent.trim();
+  if (!crudo) return bienvenida();
+  try { const d = JSON.parse(crudo); usar(d.texto, d.archivo || 'Base incluida'); }
+  catch (e) { bienvenida('No se pudo leer la base incluida en este archivo. ' + (e.message || e)); }
+})();
+})();
+</script>
+</body>
+</html>
